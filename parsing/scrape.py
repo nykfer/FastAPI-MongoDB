@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, ValidationError
 from typing import List, Optional
 import os
 import dotenv
+import json
 
 dotenv.load_dotenv()
 
@@ -12,10 +13,10 @@ class Firecrawl:
         self.app = FirecrawlApp(api_key=API_KEY)
 
     class ExtractSchema(BaseModel):
-        company_mission: str
-        supports_sso: bool
-        is_open_source: bool
-        is_in_yc: bool
+        text: str = Field(..., description="All scraped content from a page")
+        science_fields: List[str]  = Field(..., examples=["math", "biology", "history", "economy", "finance"], description="Science fields that can be related to the web-page")
+        terms: List[str] = Field(..., examples=["function", "stock market"], description="Science terms mentioned in the content")
+        people_mentioned: List[str] = Field(..., description="People that are mentioned in the content")
     
     class ScrapeParameters(BaseModel):
         only_main_content: Optional[bool] = Field(default=True, description="Only return the main content of the page excluding headers, navs, footers, etc")
@@ -44,3 +45,9 @@ class Firecrawl:
             return llm_extraction_result.json
         except ValueError as e:
             print("Error while parsing data")
+
+if __name__ == "__main__":
+    app = Firecrawl()
+    result = app.get_structured_output(url="https://medium.com/@piyushkashyap045/image-normalization-in-pytorch-from-tensor-conversion-to-scaling-3951b6337bc8")
+    dict_result = json.dumps(result)
+    print(result["text"])
