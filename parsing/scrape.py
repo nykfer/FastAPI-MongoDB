@@ -16,7 +16,7 @@ class Firecrawl:
         text: str = Field(..., description="All scraped content from a page")
         science_fields: List[str]  = Field(..., examples=["math", "biology", "history", "economy", "finance"], description="Science fields that can be related to the web-page")
         terms: List[str] = Field(..., examples=["function", "stock market"], description="Science terms mentioned in the content")
-        people_mentioned: List[str] = Field(..., description="People that are mentioned in the content")
+        people_mentioned: Optional[List[str]] = Field(..., description="People that are mentioned in the content")
     
     class ScrapeParameters(BaseModel):
         only_main_content: Optional[bool] = Field(default=True, description="Only return the main content of the page excluding headers, navs, footers, etc")
