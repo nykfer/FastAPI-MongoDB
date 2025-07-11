@@ -3,7 +3,8 @@ from pydantic import BaseModel, Field, ValidationError
 from typing import List, Optional
 import os
 import dotenv
-import json
+import requests
+import types
 
 dotenv.load_dotenv()
 
@@ -14,9 +15,9 @@ class Firecrawl:
 
     class ExtractSchema(BaseModel):
         text: str = Field(..., description="All scraped content from a page")
-        science_fields: List[str]  = Field(..., examples=["math", "biology", "history", "economy", "finance"], description="Science fields that can be related to the web-page")
-        terms: List[str] = Field(..., examples=["function", "stock market"], description="Science terms mentioned in the content")
-        people_mentioned: Optional[List[str]] = Field(..., description="People that are mentioned in the content")
+        # science_field: str  = Field(..., examples=["math", "biology", "history", "economy", "finance"], description="Science fields that can be related to the web-page")
+        # terms: List[str] = Field(..., examples=["function", "stock market"], description="Science terms mentioned in the content")
+        # people_mentioned: Optional[List[str]] = Field(..., description="People that are mentioned in the content")
     
     class ScrapeParameters(BaseModel):
         only_main_content: Optional[bool] = Field(default=True, description="Only return the main content of the page excluding headers, navs, footers, etc")
@@ -42,12 +43,22 @@ class Firecrawl:
                                                          formats=["json"],
                                                         json_options=self.json_config,
                                                         **final_parameters)
-            return llm_extraction_result.json
-        except ValueError as e:
-            print("Error while parsing data")
+            json_dict = llm_extraction_result.json
+            print(type(json_dict))
+            if isinstance(json_dict, types.FunctionType):
+                return {"Error":"Return function type", "url": url, "return_type":str(type(json_dict))}
+            else:
+                return json_dict
+        except requests.exceptions.HTTPError as e:
+            # Check if the error is a timeout
+            if "Request Timeout" in str(e):
+                print(f"Skipping URL due to timeout: {url}")
+                return {"error": "Timeout - skipped scraping", "url": url}
+            else:
+                print(f"HTTP error scraping {url}: {e}")
+                return {"error": "Error", "url": url}
 
 if __name__ == "__main__":
     app = Firecrawl()
-    result = app.get_structured_output(url="https://medium.com/@piyushkashyap045/image-normalization-in-pytorch-from-tensor-conversion-to-scaling-3951b6337bc8")
-    dict_result = json.dumps(result)
-    print(result["text"])
+    result = app.get_structured_output(url="https://futurumcareers.com/articles")
+    print(result['text'])
