@@ -1,6 +1,6 @@
 from firecrawl import JsonConfig, FirecrawlApp
 from pydantic import BaseModel, Field, ValidationError
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import dotenv
 import requests
@@ -14,10 +14,15 @@ class Firecrawl:
         self.app = FirecrawlApp(api_key=API_KEY)
 
     class ExtractSchema(BaseModel):
-        text: str = Field(..., description="All scraped content from a page")
+        url: str = Field(..., default="There is the url of scraped page")
+        text: str = Field(default="Some text", description="All scraped content from a page")
         # science_field: str  = Field(..., examples=["math", "biology", "history", "economy", "finance"], description="Science fields that can be related to the web-page")
         # terms: List[str] = Field(..., examples=["function", "stock market"], description="Science terms mentioned in the content")
         # people_mentioned: Optional[List[str]] = Field(..., description="People that are mentioned in the content")
+    
+    class ErrorResponse(BaseModel):
+        url: str = Field(..., default="There is the url of scraped page")
+        error: str = Field(..., description="Some error happened during screping process")
     
     class ScrapeParameters(BaseModel):
         only_main_content: Optional[bool] = Field(default=True, description="Only return the main content of the page excluding headers, navs, footers, etc")
@@ -43,20 +48,25 @@ class Firecrawl:
                                                          formats=["json"],
                                                         json_options=self.json_config,
                                                         **final_parameters)
-            json_dict = llm_extraction_result.json
-            print(type(json_dict))
-            if isinstance(json_dict, types.FunctionType):
-                return {"Error":"Return function type", "url": url, "return_type":str(type(json_dict))}
+            json_response = llm_extraction_result.json
+            if isinstance(json_response, types.FunctionType):
+                error_response = {"url": url, "error":f"Return function type: {str(type(json_response))}"}
+                error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
+                return error_model.json
             else:
-                return json_dict
+                return json_response
         except requests.exceptions.HTTPError as e:
             # Check if the error is a timeout
             if "Request Timeout" in str(e):
                 print(f"Skipping URL due to timeout: {url}")
-                return {"error": "Timeout - skipped scraping", "url": url}
+                error_response = {"error": "Timeout - skipped scraping", "url": url}
+                error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
+                return error_model.json
             else:
                 print(f"HTTP error scraping {url}: {e}")
-                return {"error": "Error", "url": url}
+                error_response = {"error": f"HTTP error scraping: {e}", "url": url}
+                error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
+                return error_model.json
 
 if __name__ == "__main__":
     app = Firecrawl()

@@ -1,9 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from ...db.database import client, db, collection
 from contextlib import asynccontextmanager
 from logging import info 
 import logging
-from ...parsing.scrape import Firecrawl
+import json
 from typing import List
 
 router = APIRouter()
@@ -30,26 +30,37 @@ router: APIRouter = APIRouter(lifespan=db_lifespan)
 async def get_page(id:str):
     pass
     
-@router.get("/all")
+@router.get("/all", status_code=status.HTTP_200_OK)
 async def get_pages():
+    
     cursor = collection.find({})
     documents = []
     async for document in cursor:  # Use async for here
         document["_id"] = str(document["_id"])  # Convert ObjectId to string
         documents.append(document)
-    return documents
+    
+    if documents == []:
+        raise HTTPException(status_code=204, detail="DataBase has not any data")
+    else: return documents
 
-@router.post("/page/{url}")
-async def post_page(url:str):
-    firecrawl = Firecrawl()
-    result = firecrawl.get_structured_output(url)
+@router.post("/content/{content}", status_code=status.HTTP_201_CREATED)
+async def post_page(url:str, content: dict):
     # Insert the structured result into MongoDB
-    await collection.insert_one(result)
-    return {"message": "Page scraped and inserted", "data": result}
+    await collection.insert_one(content)
+    return {"message": "Content and inserted"}
 
-@router.post("/pages/")
-async def post_pages(urls:List[str]):
-    pass
+@router.post("/contents/{contents}")
+async def post_pages(contents:List[dict], skip_error:bool):
+    contents_len = len(contents)
+    
+    async for index in urls_len:
+        if ("error" in urls[index]) and (skip_error == True): continue
+        
+        result = {"url": urls[index]}
+        result += contents[index]
+        await collection.insert_one(result)
+        
+    return {"message": "Page scraped and inserted", "urls": urls}
 
 @router.put("/update/{id}")
 async def get_pages(id: str):
