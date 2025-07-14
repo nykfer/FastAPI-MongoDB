@@ -1,7 +1,7 @@
 pages = [
     # "https://medium.com/@piyushkashyap045/image-normalization-in-pytorch-from-tensor-conversion-to-scaling-3951b6337bc8",
     # Life Sciences
-    # "https://www.science.org/content/page/subject-collections",  # Genetics & Molecular Biology
+    "https://www.science.org/content/page/subject-collections",  # Genetics & Molecular Biology
     "https://futurumcareers.com/articles",                      # Neuroscience
     "https://www.science.org/journal/sciimmunol",               # Immunology
 
