@@ -66,11 +66,11 @@ class Firecrawl:
                                                          formats=["json"],
                                                         json_options=self.json_config,
                                                         **final_parameters)
-            json_response = llm_extraction_result.json
+            json_response = llm_extraction_result.model_dump_json()
             if isinstance(json_response, types.FunctionType):
                 error_response = {"url": url, "error":f"Return function type: {str(type(json_response))}"}
                 error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
-                return error_model.model_dump()
+                return error_model.model_dump_json()
             else:
                 return json_response
         except requests.exceptions.HTTPError as e:
@@ -79,12 +79,12 @@ class Firecrawl:
                 print(f"Skipping URL due to timeout: {url}")
                 error_response = {"error": "Timeout - skipped scraping", "url": url}
                 error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
-                return error_model.model_dump()
+                return error_model.model_dump_json()
             else:
                 print(f"HTTP error scraping {url}: {e}")
                 error_response = {"error": f"HTTP error scraping: {e}", "url": url}
                 error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
-                return error_model.model_dump()
+                return error_model.model_dump_json()
 
 if __name__ == "__main__":
     app = Firecrawl()
