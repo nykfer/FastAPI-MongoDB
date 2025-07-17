@@ -1,6 +1,6 @@
 from firecrawl import JsonConfig, FirecrawlApp
 from pydantic import BaseModel, Field, ValidationError
-from typing import List, Optional, Dict
+from typing import List, Optional
 import os
 import dotenv
 import requests
@@ -16,10 +16,7 @@ class Firecrawl:
     class ExtractSchema(BaseModel):
         url: str = Field(..., description="There is the url of scraped page")
         text: str = Field(default="Some text", description="All scraped content from a page")
-        # science_field: str  = Field(..., examples=["math", "biology", "history", "economy", "finance"], description="Science fields that can be related to the web-page")
-        # terms: List[str] = Field(..., examples=["function", "stock market"], description="Science terms mentioned in the content")
-        # people_mentioned: Optional[List[str]] = Field(..., description="People that are mentioned in the content")
-    
+        
     class ErrorResponse(BaseModel):
         url: str = Field(..., description="There is the url of scraped page")
         error: str = Field(..., description="Some error happened during screping process")
@@ -48,13 +45,13 @@ class Firecrawl:
                                                          formats=["json"],
                                                         json_options=self.json_config,
                                                         **final_parameters)
-            json_response = llm_extraction_result.model_dump_json()
+            json_response = llm_extraction_result.json
             if isinstance(json_response, types.FunctionType):
                 error_response = {"url": url, "error":f"Return function type: {str(type(json_response))}"}
                 error_model = self.ErrorResponse(url=error_response["url"], error = error_response["error"])
                 return error_model.model_dump_json()
             else:
-                return json_response
+                return json.dumps(json_response)
         except requests.exceptions.HTTPError as e:
             # Check if the error is a timeout
             if "Request Timeout" in str(e):
@@ -70,7 +67,7 @@ class Firecrawl:
 
 if __name__ == "__main__":
     
-    urls = ["https://futurumcareers.com/articles",
+    urls = [#"https://futurumcareers.com/articles",
         "https://www.science.org/content/page/subject-collections",  # Genetics & Molecular Biology                      # Neuroscience
     "https://www.science.org/journal/sciimmunol",               # Immunology
 
@@ -87,9 +84,16 @@ if __name__ == "__main__":
     # Multidisciplinary & Forums
     "https://www.scienceforums.net/",                           # General Science Forums
     "https://ncas.ac.uk/for-staff/research-forums/"]
-    
+    import json
     app = Firecrawl()
+    test = ''
     for url in urls:
         result = app.get_structured_output(url=url)
         print(type(result))
         print(result)
+        test += result + '\n'
+        print(test)
+        try:
+            json_test = json.loads(test)
+        except json.JSONDecodeError:
+            print("invalid data")

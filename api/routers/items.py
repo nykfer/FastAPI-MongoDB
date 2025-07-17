@@ -51,7 +51,10 @@ async def get_page(query_str:Annotated[str, Path(max_length=3000,
     return document
     
 @router.get("/find/all/", status_code=status.HTTP_200_OK)
-async def get_pages(query_str:Annotated[str, Path(max_length=3000,
+async def get_pages(amount:Annotated[int, Query(title="Amount",
+                                                       description="""Amount of results to return.
+                                                       None means to return all""")] = 0,
+                    query_str:Annotated[str, Query(max_length=3000,
                                                    min_length=7,
                                                   title="Query JSON",
                                                   description="""Query parameter for searching
@@ -66,7 +69,7 @@ async def get_pages(query_str:Annotated[str, Path(max_length=3000,
                             detail="Invalid data input",
                             headers={"X-Error": "InvalidJSON"})
         
-    cursor = collection.find(query)
+    cursor = collection.find(query, batch_size=amount)
     documents = []
     async for document in cursor:  # Use async for here
         document["_id"] = str(document["_id"])  # Convert ObjectId to string
@@ -94,17 +97,19 @@ async def post_page(content_str: Annotated[str, Path(max_length=30000,
     await collection.insert_one(content)
     return {"message": "Content and inserted"}
 
-@router.post("/contents/{contents_str}", status_code=status.HTTP_201_CREATED)
-async def post_pages(contents_str:Annotated[List[str], Body(title="Documents JSON",
-                                                             description="""List of documents
-                                                             to inseart to 
-                                                             the MongoDB DataBase""")], 
-                     skip_error:Annotated[bool, Query(description="""Define a flag to skip
-                                                      collections with error message
-                                                      or not. By default, not skipping""")] = False):    
+@router.post("/contents/", status_code=status.HTTP_201_CREATED)
+async def post_pages(contents_str:Annotated[str, Body(..., media_type="text/plain",
+                                                      title="Documents JSON",
+                                                        description="""List of documents
+                                                        to inseart to 
+                                                        the MongoDB DataBase separeted by \n""")], 
+                    skip_error:Annotated[bool, Query(description="""Define a flag to skip
+                                                     collections with error message
+                                                     or not. By default, not skipping""")] = False):    
     
     contents_dict: List[Dict] = []
-    for index, content in enumerate(contents_str):
+    splitted_contents = contents_str.strip().split('\n')
+    for content in splitted_contents:
         if ("error" in content) and (skip_error == True): 
             continue
         else:
@@ -114,12 +119,14 @@ async def post_pages(contents_str:Annotated[List[str], Body(title="Documents JSO
                 raise HTTPException(status_code=400,
                                     detail="Invalid data input",
                                     headers={"X-Error": f"InvalidJSON: {content}"})
-            contents_dict.append(data) 
-    await collection.insert_many(contents_dict)
-        
-    return {"message": "Page scraped and inserted"}
+            contents_dict.append(data)
+    if contents_dict == []:
+        raise HTTPException(status_code=204, detail="Has not any data to insert into db") 
+    else: 
+        await collection.insert_many(contents_dict)
+        return {"message": "Page scraped and inserted"}
 
-@router.delete("/delete/single/{query_str}")
+@router.delete("/delete/one/{query_str}")
 async def get_pages(query_str:Annotated[str, Path(max_length=30000,
                                                       min_length=7,
                                                   title="Query JSON",
@@ -133,9 +140,10 @@ async def get_pages(query_str:Annotated[str, Path(max_length=30000,
                             detail="Invalid data input",
                             headers={"X-Error": "InvalidJSON"})
         
-    await collection.delete_one(query)
-    
-    return {"message": f"Query deleted successful: {query}"}
+    result = await collection.delete_one(query)
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=204, detail="The query doesn't match  any data")
+    else: return {"message": f"Document deleted successful"}
 
 @router.delete("/delete/all/{query_str}")
 async def get_pages(query_str:Annotated[str, Path(max_length=30000,
@@ -151,6 +159,7 @@ async def get_pages(query_str:Annotated[str, Path(max_length=30000,
                             detail="Invalid data input",
                             headers={"X-Error": "InvalidJSON"})
         
-    await collection.delete_many(query)
-    
-    return {"message": f"Querys deleted successful: {query}"}
+    result = await collection.delete_many(query)
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=204, detail="The query doesn't match  any data")
+    else: return {"message": f"Documents deleted successful (amount:{result.deleted_count})"}
