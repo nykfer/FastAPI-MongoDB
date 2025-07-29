@@ -163,3 +163,7 @@ async def get_pages(query_str:Annotated[str, Path(max_length=30000,
     if result.deleted_count == 0:
         raise HTTPException(status_code=204, detail="The query doesn't match  any data")
     else: return {"message": f"Documents deleted successful (amount:{result.deleted_count})"}
+    
+@router.get("/")
+async def root():
+    return "Just a string"
