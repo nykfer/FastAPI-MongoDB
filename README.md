@@ -1,6 +1,6 @@
-# 🧠 ML Pet Project – Article Classification by Science Fields
+# 🧠 FaatAPI & MongoDB
 
-This project is a machine learning-based application that classifies academic articles into various science fields. It uses **FastAPI** as the web framework and **MongoDB Atlas** for database storage.
+This project uses Firecrawl's scrape with structured output feature to get a content from a web-page and than to store it into MongoDB. It uses **FastAPI** as the web framework and **MongoDB Atlas** for database storage.
 
 ---
 
