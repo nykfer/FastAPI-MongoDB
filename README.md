@@ -74,3 +74,17 @@ async def db_lifespan(app: FastAPI):
     await app.mongodb_client.close()
 
 app: FastAPI = FastAPI(lifespan=db_lifespan)
+
+## 📚 References
+
+- **FastAPI Lifespan Events**  
+  🔗 https://fastapi.tiangolo.com/advanced/events/
+
+- **MongoDB Atlas Structure (Perplexity)**  
+  🔗 https://www.perplexity.ai/search/what-is-the-structure-of-mogng-Hwz.KmnnSnuwrxcXm.ttTw
+
+- **Migrate to PyMongo Async**  
+  🔗 https://www.mongodb.com/docs/languages/python/pymongo-driver/current/reference/migration/
+
+- **8 Best Practices for FastAPI + MongoDB**  
+  🔗 https://www.mongodb.com/developer/products/mongodb/8-fastapi-mongodb-best-practices/
