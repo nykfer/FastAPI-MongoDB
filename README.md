@@ -74,8 +74,10 @@ async def db_lifespan(app: FastAPI):
     await app.mongodb_client.close()
 
 app: FastAPI = FastAPI(lifespan=db_lifespan)
+```
+---
 
-## 📚 References
+### 📚 References
 
 - **FastAPI Lifespan Events**  
   🔗 https://fastapi.tiangolo.com/advanced/events/
